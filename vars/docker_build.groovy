@@ -1,4 +1,4 @@
-def call(String projectName, String imageTag, String dockerHubUser) {
+def call(String dockerHubUser, String projectName, String imageTag) {
 
     def image = "${dockerHubUser}/${projectName}:${imageTag}"
 
