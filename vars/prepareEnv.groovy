@@ -1,4 +1,4 @@
-def call() {
+def call(String imageTag) {
         withCredentials([
             string(credentialsId: 'taskManagerBackendSecretKey', variable: 'SECRET_KEY'),
             string(credentialsId: 'taskManagerBackendPassword', variable: 'POSTGRES_PASSWORD')
@@ -18,6 +18,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=1440
 BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://72.60.78.85:3000"]
 PROJECT_NAME=Team Tasks Manager
 BACKEND_PORT=8000
+IMAGE_TAG=${imageTag}
 EOF
 """
         }
