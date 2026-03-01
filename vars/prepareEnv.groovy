@@ -1,4 +1,5 @@
 def call(String imageTag) {
+        sh "cp .env.example .env"
         withCredentials([
             string(credentialsId: 'taskManagerBackendSecretKey', variable: 'SECRET_KEY'),
             string(credentialsId: 'taskManagerBackendPassword', variable: 'POSTGRES_PASSWORD')
