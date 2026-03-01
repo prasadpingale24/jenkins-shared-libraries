@@ -1,5 +1,4 @@
 def call() {
-    steps {
         withCredentials([
             string(credentialsId: 'taskManagerBackendSecretKey', variable: 'SECRET_KEY'),
             string(credentialsId: 'taskManagerBackendPassword', variable: 'POSTGRES_PASSWORD')
@@ -22,5 +21,4 @@ BACKEND_PORT=8000
 EOF
 """
         }
-    }
 }
