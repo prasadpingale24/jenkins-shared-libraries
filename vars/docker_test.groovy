@@ -1,52 +1,21 @@
-def call(String imageName) {
+def call() {
 
-    echo "Starting Postgres test container"
+    echo "Running backend tests using docker-compose.test.yml"
 
-    sh '''
-        docker rm -f pg_test || true
+    try {
 
-        docker run -d \
-            --name pg_test \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=task_manager_test \
-            -p 5444:5432 \
-            postgres:15-alpine
-    '''
+        sh """
+        docker compose -f docker-compose.test.yml up \
+            --abort-on-container-exit \
+            --exit-code-from backend
+        """
 
-    echo "Waiting for Postgres to be ready"
+    } finally {
 
-    sh '''
-        for i in $(seq 1 20); do
-            docker exec pg_test pg_isready -U postgres && break
-            echo "Waiting for Postgres... attempt $i"
-            sleep 2
-        done
-    '''
+        echo "Cleaning up test containers"
 
-    echo "Running backend tests"
-
-    sh """
-        docker run --rm \
-            --name backend_test \
-            --link pg_test:postgres \
-            -e POSTGRES_HOST=postgres \
-            -e POSTGRES_PORT=5432 \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=task_manager_test \
-            -e SECRET_KEY=jenkins-ci-test-key \
-            -e ENVIRONMENT=test \
-            -e PYTHONPATH=/app \
-            -v \$(pwd):/app \
-            -w /app \
-            python:3.13-slim \
-            sh -c "pip install uv --quiet && \
-                   uv sync --group dev && \
-                   uv run pytest tests/ \
-                        --junitxml=results.xml \
-                        --cov=app \
-                        --cov-report=xml \
-                        -v"
-    """
+        sh """
+        docker compose -f docker-compose.test.yml down -v
+        """
+    }
 }
