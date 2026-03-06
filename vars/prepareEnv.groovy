@@ -1,26 +1,23 @@
-def call(String imageTag) {
-        sh "cp .env.example .env" 
-        withCredentials([
-            string(credentialsId: 'taskManagerBackendSecretKey', variable: 'SECRET_KEY'),
-            string(credentialsId: 'taskManagerBackendPassword', variable: 'POSTGRES_PASSWORD')
-        ]) {
-
-sh """
-cat > .env <<EOF
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-POSTGRES_DB=task_manager
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-
-SECRET_KEY=${SECRET_KEY}
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://72.60.78.85:3000"]
-PROJECT_NAME=Team Tasks Manager
-BACKEND_PORT=8000
-IMAGE_TAG=${imageTag}
-EOF
-"""
+def call(Map config = [:]) {
+    echo "Preparing environment for ${config.projectName ?: 'project'}"
+    
+    // 1. Initial .env from example
+    sh "cp .env.example .env"
+    
+    // 2. Add static variables
+    if (config.vars) {
+        config.vars.each { key, value ->
+            sh "echo '${key}=${value}' >> .env"
         }
+    }
+
+    // 3. Add secrets from credentials
+    if (config.secrets) {
+        config.secrets.each { secret ->
+            // config.secrets should be a list of maps: [[id: 'cred-id', var: 'ENV_VAR_NAME']]
+            withCredentials([string(credentialsId: secret.id, variable: 'SECRET_VAL')]) {
+                sh "echo '${secret.var}=\${SECRET_VAL}' >> .env"
+            }
+        }
+    }
 }
