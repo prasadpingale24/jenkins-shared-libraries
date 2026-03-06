@@ -19,7 +19,7 @@ def call(Map config = [:]) {
             withCredentials([string(credentialsId: secret.id, variable: 'SECRET_VAL')]) {
                 // Filter out existing key and then append new secret
                 sh "grep -v '^${secret.var}=' .env > .env.tmp || true && mv .env.tmp .env"
-                sh "echo ${secret.var}=\$SECRET_VAL >> .env"
+                sh "echo ${secret.var}='${SECRET_VAL}' >> .env"
             }
         }
     }
