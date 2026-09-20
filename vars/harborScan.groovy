@@ -24,9 +24,7 @@ def call(Map config = [:]) {
 
         def client = new HarborClient(
             this,
-            "https://${registry}",
-            env.HARBOR_USER,
-            env.HARBOR_PASSWORD
+            "https://${registry}"
         )
 
         int status = client.triggerScan(
