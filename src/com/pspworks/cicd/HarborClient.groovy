@@ -1,81 +1,58 @@
-package com.pspworks.cicd
+import com.pspworks.cicd.HarborClient
 
-class HarborClient implements Serializable {
+def call(Map config = [:]) {
 
-    private final def steps
-    private final String baseUrl
+    require(config, 'registry')
+    require(config, 'project')
+    require(config, 'repository')
+    require(config, 'reference')
+    require(config, 'credentials')
 
-    HarborClient(
-        def steps,
-        String baseUrl
-    ) {
-        this.steps = steps
-        this.baseUrl = baseUrl
+    String registry = config.registry
+    String project = config.project
+    String repository = config.repository
+    String reference = config.reference
+    String credentialsId = config.credentials
+
+    withCredentials([
+        usernamePassword(
+            credentialsId: credentialsId,
+            usernameVariable: 'HARBOR_USER',
+            passwordVariable: 'HARBOR_PASSWORD'
+        )
+    ]) {
+
+        def client = new HarborClient(
+            this,
+            "https://${registry}"
+        )
+
+        int status = client.triggerScan(
+            project,
+            repository,
+            reference
+        )
+
+        echo "Harbor scan request HTTP status: ${status}"
+
+        if (!(status in [202, 409])) {
+            error(
+                "Harbor scan request failed. " +
+                "Expected HTTP 202 or 409, got ${status}"
+            )
+        }
+
+        if (status == 202) {
+            echo "Harbor accepted the scan request."
+        } else {
+            echo "Harbor reports that a scan is already queued or running."
+        }
     }
+}
 
-    int triggerScan(
-        String project,
-        String repository,
-        String reference
-    ) {
+private void require(Map config, String name) {
 
-        String url =
-            "${baseUrl}/api/v2.0/projects/${project}/repositories/${repository}/artifacts/${reference}/scan"
-
-        return steps.sh(
-            script: """
-                curl -sk \
-                    --user "\$HARBOR_USER:\$HARBOR_PASSWORD" \
-                    -X POST \
-                    -o /dev/null \
-                    -w "%{http_code}" \
-                    "${url}"
-            """,
-            returnStdout: true
-        ).trim().toInteger()
-    }
-
-    Map getArtifact(
-        String project,
-        String repository,
-        String reference
-    ) {
-
-        String url =
-            "${baseUrl}/api/v2.0/projects/${project}/repositories/${repository}/artifacts/${reference}?with_scan_overview=true"
-
-        String json = steps.sh(
-            script: """
-                curl -fsSk \
-                    --user "\$HARBOR_USER:\$HARBOR_PASSWORD" \
-                    -H "X-Accept-Vulnerabilities: application/vnd.security.vulnerability.report; version=1.1" \
-                    "${url}"
-            """,
-            returnStdout: true
-        ).trim()
-
-        return steps.readJSON(text: json)
-    }
-
-    Map getVulnerabilityReport(
-        String project,
-        String repository,
-        String reference
-    ) {
-
-        String url =
-            "${baseUrl}/api/v2.0/projects/${project}/repositories/${repository}/artifacts/${reference}/additions/vulnerabilities"
-
-        String json = steps.sh(
-            script: """
-                curl -fsSk \
-                    --user "\$HARBOR_USER:\$HARBOR_PASSWORD" \
-                    -H "X-Accept-Vulnerabilities: application/vnd.security.vulnerability.report; version=1.1" \
-                    "${url}"
-            """,
-            returnStdout: true
-        ).trim()
-
-        return steps.readJSON(text: json)
+    if (!config[name]) {
+        error("harborScan: ${name} is required")
     }
 }
