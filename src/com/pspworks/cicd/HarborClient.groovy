@@ -4,19 +4,13 @@ class HarborClient implements Serializable {
 
     private final def steps
     private final String baseUrl
-    private final String username
-    private final String password
 
     HarborClient(
         def steps,
-        String baseUrl,
-        String username,
-        String password
+        String baseUrl
     ) {
         this.steps = steps
         this.baseUrl = baseUrl
-        this.username = username
-        this.password = password
     }
 
     int triggerScan(
